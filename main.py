@@ -1,6 +1,7 @@
 import tensorflow as tf
 from config import args
 from model.Tiramisu import Tiramisu
+from model.FullyConvNet import FCN
 import os
 from utils import write_spec
 

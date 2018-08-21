@@ -17,7 +17,7 @@ class DataLoader(object):
             self.file_name = 'data.h5'
         self.num_tr = cfg.num_tr
         self.height, self.width = cfg.height, cfg.width
-        self.max_bottom_left_front_corner = (cfg.height*1 - 1, cfg.width*1 - 1)
+        self.max_bottom_left_front_corner = (cfg.train_img_size - cfg.height - 1, cfg.train_img_size - cfg.width - 1)
         # maximum value that the bottom left front corner of a cropped patch can take
 
     def next_batch(self, start=None, end=None, mode='train'):
@@ -43,10 +43,10 @@ class DataLoader(object):
 
     def count_num_samples(self, mode='valid'):
         if mode == 'valid':
-            h5f = h5py.File(self.valid_data_dir + 'valid.h5', 'r')
+            h5f = h5py.File(self.data_dir + self.file_name, 'r')
             num_ = h5f['y_valid'][:].shape[0]
         elif mode == 'test':
-            h5f = h5py.File(self.test_data_dir + 'test1.h5', 'r')
+            h5f = h5py.File(self.data_dir + self.file_name, 'r')
             num_ = h5f['y_test'][:].shape[0]
         h5f.close()
         return num_

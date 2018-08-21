@@ -1,8 +1,7 @@
 import h5py
 import numpy as np
+import os
 import matplotlib.pyplot as plt
-
-raw_data_dir = '/home/cougarnet.uh.edu/amobiny/Desktop/Mouse_Segmentation/raw_data'
 
 
 def load_data(data_dir, name):
@@ -13,12 +12,50 @@ def load_data(data_dir, name):
     return x, y
 
 
-x_train, y_train = load_data(raw_data_dir, '/he_sec_a.h5')
-x_valid, y_valid = load_data(raw_data_dir, '/he_sec_b.h5')
-x_test, y_test = load_data(raw_data_dir, '/he_sec_c.h5')
+def norm(x, y, mode):
+    if mode == 'gaussian':
+        pass
+    elif mode == 'standard':
+        x_max = np.array([np.max(x[:, :, i]) for i in range(x.shape[-1])])
+        x_min = np.array([np.min(x[:, :, i]) for i in range(x.shape[-1])])
+        x_norm = (x-x_min)/(x_max-x_min)
+        y_norm = y/255.
+        return x_norm, y_norm
 
-print()
+
+def preprocess(normalize=True, raw_data_dir='./raw_data', out_data_dir='./data'):
+    if not os.path.exists(raw_data_dir):
+        os.makedirs(raw_data_dir)
+    assert not os.path.exists(raw_data_dir + 'he_sec_a.h5'), 'Please copy the raw data in the raw_data folder'
+    if not os.path.exists(out_data_dir):
+        os.makedirs(out_data_dir)
+
+    x_train, y_train = load_data(raw_data_dir, '/he_sec_a.h5')
+    x_valid, y_valid = load_data(raw_data_dir, '/he_sec_b.h5')
+    x_test, y_test = load_data(raw_data_dir, '/he_sec_c.h5')
+
+    if normalize:
+        x_train, y_train = norm(x_train, y_train, mode='standard')
+        x_valid, y_valid = norm(x_valid, y_valid, mode='standard')
+        x_test, y_test = norm(x_test, y_test, mode='standard')
+        out_name = out_data_dir+'/data_norm.h5'
+    else:
+        y_train = y_train/255.
+        y_valid = y_valid/255.
+        y_test = y_test/255.
+        out_name = out_data_dir+'/data.h5'
+
+    h5f = h5py.File(out_name, 'w')
+    h5f.create_dataset('x_train', data=x_train)
+    h5f.create_dataset('y_train', data=y_train)
+    h5f.create_dataset('x_valid', data=x_valid)
+    h5f.create_dataset('y_valid', data=y_valid)
+    h5f.create_dataset('x_test', data=x_test)
+    h5f.create_dataset('y_test', data=y_test)
+    h5f.close()
 
 
-
-
+if __name__ == '__main__':
+    preprocess(normalize=False,
+               raw_data_dir='./raw_data',
+               out_data_dir='./data')

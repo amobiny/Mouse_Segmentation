@@ -103,6 +103,8 @@ venv.bak/
 # mypy
 .mypy_cache/
 Results/
+data/
+raw_data/
 .idea
 logs
 *.pyc

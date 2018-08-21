@@ -82,8 +82,8 @@ def deconv_2d(inputs, filter_size, num_filters, layer_name, stride=1, batch_norm
     input_shape = inputs.get_shape().as_list()
     with tf.variable_scope(layer_name):
         kernel_shape = [filter_size, filter_size, num_filters, input_shape[-1]]
-        if not len(out_shape.get_shape().as_list()):    # if out_shape is not provided
-            out_shape = [input_shape[0]] + list(map(lambda x: x*2, input_shape[1:-1])) + [num_filters]
+        if not len(out_shape.get_shape().as_list()):  # if out_shape is not provided
+            out_shape = [input_shape[0]] + list(map(lambda x: x * 2, input_shape[1:-1])) + [num_filters]
         weights = weight_variable(layer_name, shape=kernel_shape)
         # biases = bias_variable(layer_name, [num_filters])
         layer = tf.nn.conv2d_transpose(inputs,
@@ -99,7 +99,7 @@ def deconv_2d(inputs, filter_size, num_filters, layer_name, stride=1, batch_norm
             layer += biases
         layer = activation(layer)
         if add_reg:
-            tf.add_to_collection('weights', weights)
+            tf.add_to_collection('reg_weights', weights)
     return layer
 
 
@@ -145,10 +145,10 @@ def max_pool(x, ksize, name):
     """
     with tf.variable_scope(name):
         maxpool = tf.nn.max_pool(x,
-                                   ksize=[1, ksize, ksize, 1],
-                                   strides=[1, 2, 2, 1],
-                                   padding="SAME",
-                                   name=name)
+                                 ksize=[1, ksize, ksize, 1],
+                                 strides=[1, 2, 2, 1],
+                                 padding="SAME",
+                                 name=name)
         print('{}: {}'.format(name, maxpool.get_shape()))
         return maxpool
 

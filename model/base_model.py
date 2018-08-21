@@ -11,7 +11,7 @@ class BaseModel(object):
         self.conf = conf
         self.is_training = True
         self.input_shape = [None, self.conf.height, self.conf.width, self.conf.in_channel]
-        self.output_shape = [None, self.conf.height, self.conf.width]
+        self.output_shape = [None, self.conf.height, self.conf.width, self.conf.out_channel]
         self.create_placeholders()
 
     def create_placeholders(self):
@@ -24,15 +24,16 @@ class BaseModel(object):
         with tf.name_scope('Loss'):
             if self.conf.loss_type == 'MSE':
                 with tf.name_scope('MSE'):
-                    loss = tf.losses.mean_squared_error(self.y, self.logits)
-            with tf.name_scope('L2_loss'):
-                l2_loss = tf.reduce_sum(
-                    self.conf.lmbda * tf.stack([tf.nn.l2_loss(v) for v in tf.get_collection('reg_weights')]))
-            with tf.name_scope('total'):
-                self.total_loss = loss + l2_loss
-                self.mean_loss, self.mean_loss_op = tf.metrics.mean(self.total_loss)
+                    self.loss = tf.losses.mean_squared_error(self.y, self.logits)
+            if self.conf.add_l2_reg:
+                with tf.name_scope('L2_loss'):
+                    l2_loss = tf.reduce_sum(
+                        self.conf.lmbda * tf.stack([tf.nn.l2_loss(v) for v in tf.get_collection('reg_weights')]))
+                    self.loss += l2_loss
+            self.mean_loss, self.mean_loss_op = tf.metrics.mean(self.loss)
 
     def configure_network(self):
+        self.y_pred = tf.sigmoid(self.logits)
         self.loss_func()
         global_step = tf.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False)
         learning_rate = tf.train.exponential_decay(self.conf.init_lr,
@@ -43,7 +44,7 @@ class BaseModel(object):
         self.learning_rate = tf.maximum(learning_rate, self.conf.lr_min)
         with tf.name_scope('Optimizer'):
             optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
-            self.train_op = optimizer.minimize(self.total_loss, global_step=global_step)
+            self.train_op = optimizer.minimize(self.loss, global_step=global_step)
         self.sess.run(tf.global_variables_initializer())
         trainable_vars = tf.trainable_variables()
         self.saver = tf.train.Saver(var_list=trainable_vars, max_to_keep=1000)
@@ -62,7 +63,7 @@ class BaseModel(object):
                                          self.x[:, :, :],
                                          max_outputs=self.conf.batch_size),
                         tf.summary.image('train/prediction_mask',
-                                         tf.cast(tf.expand_dims(self.y_pred[:, :, :], -1),
+                                         tf.cast(tf.expand_dims(self.y_pred, -1),
                                                  tf.float32),
                                          max_outputs=self.conf.batch_size),
                         tf.summary.image('train/original_mask',

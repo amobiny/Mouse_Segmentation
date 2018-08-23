@@ -2,6 +2,7 @@ import tensorflow as tf
 
 flags = tf.app.flags
 flags.DEFINE_string('mode', 'train', 'train or test')
+flags.DEFINE_string('model', 'FCN', 'FCN or Tiramisu or DenseNet')
 flags.DEFINE_integer('reload_step', 0, 'Reload step to continue training')
 flags.DEFINE_integer('step_num', 20000, 'Reload step to test the model')
 
@@ -26,8 +27,8 @@ flags.DEFINE_boolean('normalize', True, 'Whether to load normalized data or not'
 flags.DEFINE_boolean('data_augment', True, 'Adds augmentation to data')
 flags.DEFINE_integer('max_angle', 40, 'Maximum rotation angle along each axis; when applying augmentation')
 flags.DEFINE_integer('train_img_size', 512, 'Size of the large original image')
-flags.DEFINE_integer('height', 64, 'Network input height size')
-flags.DEFINE_integer('width', 64, 'Network input width size')
+flags.DEFINE_integer('height', 32, 'Network input height size')
+flags.DEFINE_integer('width', 32, 'Network input width size')
 flags.DEFINE_integer('in_channel', 60, 'Number of input channels')
 flags.DEFINE_integer('out_channel', 3, 'Number of output channels')
 

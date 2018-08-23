@@ -1,9 +1,15 @@
 import tensorflow as tf
 from config import args
-from model.Tiramisu import Tiramisu
-from model.FullyConvNet import FCN
 import os
 from utils import write_spec
+
+
+if args.model == 'FCN':
+    from model.FullyConvNet import FCN as Model
+elif args.model == 'Tiramisu':
+    from model.Tiramisu import Tiramisu as Model
+elif args.model == 'Densenet':
+    from model.Tiramisu import Tiramisu as Model
 
 
 def main(_):
@@ -11,7 +17,7 @@ def main(_):
         print('invalid mode: ', args.mode)
         print("Please input a mode: train, test, or predict")
     else:
-        model = FCN(tf.Session(), args)
+        model = Model(tf.Session(), args)
         if not os.path.exists(args.modeldir+args.run_name):
             os.makedirs(args.modeldir+args.run_name)
         if not os.path.exists(args.logdir+args.run_name):

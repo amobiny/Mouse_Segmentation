@@ -23,10 +23,10 @@ class DataLoader(object):
             img_idxs = np.random.choice(self.cfg.num_tr, replace=True, size=self.cfg.batch_size)
             bottom_coords = np.random.randint(self.max_bottom_left_front_corner[1], size=self.cfg.batch_size)
             left_coords = np.random.randint(self.max_bottom_left_front_corner[0], size=self.cfg.batch_size)
-            x = [h5f['x_train'][img_idx, bottom:bottom + self.height, left:left + self.width, :]
-                 for img_idx, bottom, left in zip(img_idxs, bottom_coords, left_coords)]
-            y = [h5f['y_train'][img_idx, bottom:bottom + self.height, left:left + self.width, :]
-                 for img_idx, bottom, left in zip(img_idxs, bottom_coords, left_coords)]
+            x = np.array([h5f['x_train'][img_idx, bottom:bottom + self.height, left:left + self.width, :]
+                          for img_idx, bottom, left in zip(img_idxs, bottom_coords, left_coords)])
+            y = np.array([h5f['y_train'][img_idx, bottom:bottom + self.height, left:left + self.width, :]
+                          for img_idx, bottom, left in zip(img_idxs, bottom_coords, left_coords)])
             if self.cfg.data_augment:
                 x, y = random_rotation_2d(x, y, max_angle=self.cfg.max_angle)
             return x, y
@@ -58,19 +58,13 @@ def random_rotation_2d(img_batch, mask_batch, max_angle):
     :param max_angle: `float`. The maximum rotation angle
     :return: batch of rotated 3D images and masks
     """
-    size = img_batch.shape
-    img_batch = np.squeeze(img_batch, axis=-1)
     img_batch_rot, mask_batch_rot = img_batch, mask_batch
     for i in range(img_batch.shape[0]):
-        axis_rot = np.random.randint(2)
-        if axis_rot:   # if rotating along any axis
-            image, mask = img_batch[i], mask_batch[i]
-            # rotate along z-axis
-            angle = random.uniform(-max_angle, max_angle)
-            img_batch_rot[i] = rotate(image, angle)
-            mask_batch_rot[i] = rotate(mask, angle)
-
-    return img_batch_rot.reshape(size), mask_batch
+        image, mask = img_batch[i], mask_batch[i]
+        angle = random.uniform(-max_angle, max_angle)
+        img_batch_rot[i] = rotate(image, angle)
+        mask_batch_rot[i] = rotate(mask, angle)
+    return img_batch_rot, mask_batch
 
 
 def rotate(x, angle):

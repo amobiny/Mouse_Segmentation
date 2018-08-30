@@ -4,6 +4,7 @@ import os
 import numpy as np
 from scipy import misc
 
+
 class BaseModel(object):
 
     def __init__(self, sess, conf):
@@ -59,16 +60,8 @@ class BaseModel(object):
     def configure_summary(self):
         summary_list = [tf.summary.scalar('learning_rate', self.learning_rate),
                         tf.summary.scalar('loss', self.mean_loss),
-                        tf.summary.image('train/original_image',
-                                         self.x[:, :, :],
-                                         max_outputs=self.conf.batch_size),
-                        tf.summary.image('train/prediction_mask',
-                                         tf.cast(tf.expand_dims(self.y_pred, -1),
-                                                 tf.float32),
-                                         max_outputs=self.conf.batch_size),
-                        tf.summary.image('train/original_mask',
-                                         tf.cast(tf.expand_dims(self.y[:, :, :], -1), tf.float32),
-                                         max_outputs=self.conf.batch_size)]
+                        tf.summary.image('train/prediction_mask', tf.cast(self.y_pred, tf.float32), max_outputs=3),
+                        tf.summary.image('train/original_mask', tf.cast(self.y, tf.float32), max_outputs=3)]
         self.merged_summary = tf.summary.merge(summary_list)
 
     def save_summary(self, summary, step):
@@ -85,6 +78,7 @@ class BaseModel(object):
             print('----> Continue Training from step #{}'.format(self.conf.reload_step))
         else:
             print('----> Start Training')
+        self.best_validation_loss = 10000
         self.data_reader = DataLoader(self.conf)
         self.data_reader.get_data(mode='valid')
         self.num_val_batch = int(self.data_reader.y_valid.shape[0] / self.conf.batch_size)
@@ -93,11 +87,11 @@ class BaseModel(object):
             if train_step % self.conf.SUMMARY_FREQ == 0:
                 x_batch, y_batch = self.data_reader.next_batch(mode='train')
                 feed_dict = {self.x: x_batch, self.y: y_batch, self.keep_prob: self.conf.drop_out_rate}
-                _, _, _, summary = self.sess.run([self.train_op,
-                                                  self.mean_loss_op,
-                                                  self.merged_summary],
-                                                 feed_dict=feed_dict)
-                loss, acc = self.sess.run(self.mean_loss)
+                _, _, summary = self.sess.run([self.train_op,
+                                               self.mean_loss_op,
+                                               self.merged_summary],
+                                              feed_dict=feed_dict)
+                loss = self.sess.run(self.mean_loss)
                 print('step: {0:<6}, train_loss= {1:.4f}'.format(train_step, loss))
                 self.save_summary(summary, train_step + self.conf.reload_step)
             else:
@@ -127,7 +121,7 @@ class BaseModel(object):
         else:
             improved_str = ''
         print('-' * 25 + 'Validation' + '-' * 25)
-        print('After {0} training step: val_loss= {1:.4f}, val_acc={2:.01%}{3}'
+        print('After {0} training step: val_loss= {1:.4f}'
               .format(train_step, valid_loss, improved_str))
         print('-' * 60)
 
@@ -152,11 +146,11 @@ class BaseModel(object):
 
     def save(self, step):
         print('----> Saving the model at step #{0}'.format(step))
-        checkpoint_path = os.path.join(self.conf.modeldir+self.conf.run_name)
+        checkpoint_path = os.path.join(self.conf.modeldir + self.conf.run_name)
         self.saver.save(self.sess, checkpoint_path, global_step=step)
 
     def reload(self, step):
-        checkpoint_path = os.path.join(self.conf.modeldir+self.conf.run_name)
+        checkpoint_path = os.path.join(self.conf.modeldir + self.conf.run_name)
         model_path = checkpoint_path + '-' + str(step)
         if not os.path.exists(model_path + '.meta'):
             print('----> No such checkpoint found', model_path)

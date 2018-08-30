@@ -9,7 +9,7 @@ flags.DEFINE_integer('step_num', 20000, 'Reload step to test the model')
 # Training logs
 flags.DEFINE_integer('max_step', 100000, '# of step for training')
 flags.DEFINE_integer('SUMMARY_FREQ', 100, 'Number of step to save summary')
-flags.DEFINE_integer('VAL_FREQ', 100, 'Number of step to evaluate the network on Validation data')
+flags.DEFINE_integer('VAL_FREQ', 1000, 'Number of step to evaluate the network on Validation data')
 flags.DEFINE_float('init_lr', 1e-3, 'Initial learning rate')
 flags.DEFINE_float('lr_min', 1e-5, 'Minimum learning rate')
 

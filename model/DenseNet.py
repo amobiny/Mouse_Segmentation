@@ -6,8 +6,8 @@ from utils import get_num_channels
 
 class DenseNet(BaseModel):
     def __init__(self, sess, conf,
-                 num_levels=5,
-                 num_blocks=(4, 6, 8, 10, 12),  # number of bottleneck blocks at each level
+                 num_levels=4,
+                 num_blocks=(6, 8, 10, 12),  # number of bottleneck blocks at each level
                  bottom_convs=16):  # number of convolutions at the bottom of the network
         assert num_levels == len(num_blocks), "number of levels doesn't match with number of blocks!"
         super(DenseNet, self).__init__(sess, conf)
@@ -64,7 +64,7 @@ class DenseNet(BaseModel):
                 x = BN_Relu_conv_2d(x, 3, 256, 'pre_output_layer', add_reg=self.conf.use_reg,
                                     is_train=self.is_training)
                 print('pre_out shape: {}'.format(x.get_shape()))
-                self.logits = BN_Relu_conv_2d(x, 1, self.conf.num_cls, 'Output_layer',
+                self.logits = BN_Relu_conv_2d(x, 1, self.conf.out_channel, 'Output_layer',
                                               add_reg=self.conf.use_reg, is_train=self.is_training)
                 print('{}: {}'.format('output', self.logits.get_shape()))
 

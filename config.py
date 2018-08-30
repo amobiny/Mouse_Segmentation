@@ -2,7 +2,7 @@ import tensorflow as tf
 
 flags = tf.app.flags
 flags.DEFINE_string('mode', 'train', 'train or test')
-flags.DEFINE_string('model', 'FCN', 'FCN or Tiramisu or Densenet')
+flags.DEFINE_string('model', 'Densenet', 'FCN or Tiramisu or Densenet')
 flags.DEFINE_integer('reload_step', 0, 'Reload step to continue training')
 flags.DEFINE_integer('step_num', 20000, 'Reload step to test the model')
 
@@ -15,7 +15,7 @@ flags.DEFINE_float('lr_min', 1e-5, 'Minimum learning rate')
 
 # Hyper-parameters
 flags.DEFINE_string('loss_type', 'MSE', 'Mean-Squared Error')
-flags.DEFINE_boolean('add_l2_reg', False, 'Adds L2 regularizxation')
+flags.DEFINE_boolean('use_reg', False, 'Adds L2 regularizxation')
 flags.DEFINE_float('lmbda', 1e-3, 'L2 regularization coefficient')
 flags.DEFINE_integer('batch_size', 8, 'training batch size')
 
@@ -43,5 +43,8 @@ flags.DEFINE_integer('start_channel_num', 16, 'start number of outputs for the f
 flags.DEFINE_integer('filter_size', 3, 'Filter size for the conv and deconv layers')
 flags.DEFINE_integer('pool_filter_size', 2, 'Filter size for pooling layers')
 flags.DEFINE_float('drop_out_rate', 0.9, 'Dropout rate')
+flags.DEFINE_integer('growth_rate', 16, 'growth rate of the DenseNet')
+flags.DEFINE_float('theta_down', 0.5, 'encoder compression rate')
+flags.DEFINE_float('theta_up', 0.5, 'decoder compression rate')
 
 args = tf.app.flags.FLAGS

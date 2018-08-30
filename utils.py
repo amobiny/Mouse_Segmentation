@@ -50,6 +50,6 @@ def write_spec(args):
     file.write('num_training: '+str(args.num_tr)+'\n')
     file.write('drop_out_rate: '+str(args.drop_out_rate)+'\n')
     file.write('batch_normalization: '+str(args.use_BN)+'\n')
-    file.write('regularization: '+str(args.add_l2_reg)+'\n')
+    file.write('regularization: '+str(args.use_reg)+'\n')
     file.write('kernel_size: '+str(args.filter_size)+'\n')
     file.close()

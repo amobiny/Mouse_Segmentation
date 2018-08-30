@@ -18,15 +18,15 @@ class BaseModel(object):
     def create_placeholders(self):
         with tf.name_scope('Input'):
             self.x = tf.placeholder(tf.float32, self.input_shape, name='input')
-            self.y = tf.placeholder(tf.int64, self.output_shape, name='annotation')
+            self.y = tf.placeholder(tf.float32, self.output_shape, name='annotation')
             self.keep_prob = tf.placeholder(tf.float32)
 
     def loss_func(self):
         with tf.name_scope('Loss'):
             if self.conf.loss_type == 'MSE':
                 with tf.name_scope('MSE'):
-                    self.loss = tf.losses.mean_squared_error(self.y, self.logits)
-            if self.conf.add_l2_reg:
+                    self.loss = tf.norm(self.y - self.logits)
+            if self.conf.use_reg:
                 with tf.name_scope('L2_loss'):
                     l2_loss = tf.reduce_sum(
                         self.conf.lmbda * tf.stack([tf.nn.l2_loss(v) for v in tf.get_collection('reg_weights')]))
@@ -60,8 +60,8 @@ class BaseModel(object):
     def configure_summary(self):
         summary_list = [tf.summary.scalar('learning_rate', self.learning_rate),
                         tf.summary.scalar('loss', self.mean_loss),
-                        tf.summary.image('train/prediction_mask', tf.cast(self.y_pred, tf.float32), max_outputs=3),
-                        tf.summary.image('train/original_mask', tf.cast(self.y, tf.float32), max_outputs=3)]
+                        tf.summary.image('prediction_mask', self.y_pred, max_outputs=3),
+                        tf.summary.image('original_mask', self.y, max_outputs=3)]
         self.merged_summary = tf.summary.merge(summary_list)
 
     def save_summary(self, summary, step):

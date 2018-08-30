@@ -3,7 +3,7 @@ from Data_Loader import DataLoader
 import os
 import numpy as np
 from scipy import misc
-
+# add a line to test committing
 class BaseModel(object):
 
     def __init__(self, sess, conf):

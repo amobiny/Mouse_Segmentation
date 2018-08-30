@@ -1,6 +1,6 @@
 import tensorflow as tf
-from base_model import BaseModel
-from ops import conv_2d, deconv_2d, BN_Relu_conv_2d, max_pool
+from model.base_model import BaseModel
+from model.ops import conv_2d, deconv_2d, BN_Relu_conv_2d, max_pool
 from utils import get_num_channels
 
 
@@ -27,6 +27,7 @@ class Tiramisu(BaseModel):
         with tf.variable_scope('Tiramisu'):
             feature_list = list()
             shape_list = list()
+
             with tf.variable_scope('input'):
                 x = conv_2d(x, self.k_size, 48, 'input_layer', batch_norm=False, is_train=self.is_training)
                 # x = tf.nn.dropout(x, self.keep_prob)
@@ -49,19 +50,20 @@ class Tiramisu(BaseModel):
             with tf.variable_scope('Decoder'):
                 for l in reversed(range(self.num_levels)):
                     with tf.variable_scope('level_' + str(l + 1)):
-                        #f = feature_list[l]
-                        out_shape = shape_list[l]
-                        x = self.up_conv(x, self.num_convs[l], out_shape=out_shape)
+
+                        shape = x.get_shape().as_list()
+                        out_shape = [self.conf.batch_size] + list(map(lambda x: x * 2, shape[1:-1])) + [shape[-1]]
+                        out_shape = tf.shape(tf.zeros((out_shape)))
+                        x = self.up_conv(x, out_shape=out_shape)
                         stack = tf.concat((x, feature_list[l]), axis=-1)
                         print('{}: {}'.format('Decoder_level' + str(l + 1), x.get_shape()))
                         x = self.dense_block(stack, self.num_convs[l])
                         print('{}: {}'.format('Dense_block_level' + str(l + 1), x.get_shape()))
                         stack = tf.concat((stack, x), axis=-1)
+                        print('{}: {}'.format('stck_depth' + str(l + 1), stack.get_shape()))
 
             with tf.variable_scope('output'):
-                # x = BN_Relu_conv_2d(x, self.k_size, self.conf.num_cls, 'Output_layer', batch_norm=True,
-                #                     is_train=self.is_training)
-                # x = tf.nn.dropout(x,self.keep_prob)
+
                 print('{}: {}'.format('out_block_input', stack.get_shape()))
                 self.logits = BN_Relu_conv_2d(stack, 1, self.conf.num_cls, 'Output_layer', batch_norm=True,
                                               is_train=self.is_training)
@@ -70,6 +72,9 @@ class Tiramisu(BaseModel):
     def dense_block(self, layer_input, num_convolutions):
         x = layer_input
         layers = []
+        # n_channels = get_num_channels(x)
+        # if n_channels == self.conf.channel:
+        #    n_channels = self.conf.start_channel_num
         for i in range(num_convolutions):
             layer = BN_Relu_conv_2d(inputs=x,
                                     filter_size=self.k_size,
@@ -97,8 +102,8 @@ class Tiramisu(BaseModel):
         x = max_pool(x, self.conf.pool_filter_size, name='maxpool')
         return x
 
-    def up_conv(self, x, num_out_channels, out_shape):
-        num_out_channels = num_out_channels * self.conf.start_channel_num  # x.get_shape()[-1]
+    def up_conv(self, x, out_shape):
+        num_out_channels = x.get_shape().as_list()[-1]
         x = deconv_2d(inputs=x,
                       filter_size=3,
                       num_filters=num_out_channels,

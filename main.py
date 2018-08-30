@@ -9,7 +9,7 @@ if args.model == 'FCN':
 elif args.model == 'Tiramisu':
     from model.Tiramisu import Tiramisu as Model
 elif args.model == 'Densenet':
-    from model.Tiramisu import Tiramisu as Model
+    from model.DenseNet import DenseNet as Model
 
 
 def main(_):

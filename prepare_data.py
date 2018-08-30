@@ -46,8 +46,8 @@ def preprocess(normalize=True, raw_data_dir='./raw_data', out_data_dir='./data')
         out_name = out_data_dir+'/data.h5'
 
     h5f = h5py.File(out_name, 'w')
-    h5f.create_dataset('x_train', data=x_train)
-    h5f.create_dataset('y_train', data=y_train)
+    h5f.create_dataset('x_train', data=x_train.reshape(-1, 512, 512, 60))
+    h5f.create_dataset('y_train', data=y_train.reshape(-1, 512, 512, 3))
     h5f.create_dataset('x_valid', data=x_valid)
     h5f.create_dataset('y_valid', data=y_valid)
     h5f.create_dataset('x_test', data=x_test)
@@ -56,6 +56,7 @@ def preprocess(normalize=True, raw_data_dir='./raw_data', out_data_dir='./data')
 
 
 if __name__ == '__main__':
-    preprocess(normalize=False,
+    preprocess(normalize=True,
                raw_data_dir='./raw_data',
                out_data_dir='./data')
+

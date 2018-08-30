@@ -51,7 +51,7 @@ def conv_2d(inputs, filter_size, num_filters, layer_name, stride=1, is_train=Tru
                              filter=weights,
                              strides=[1, stride, stride, 1],
                              padding="SAME")
-        print('{}: {}'.format(layer_name, layer.get_shape()))
+        #print('{}: {}'.format(layer_name, layer.get_shape()))
         if batch_norm:
             layer = batch_norm_wrapper(layer, is_train)
         else:
@@ -82,8 +82,8 @@ def deconv_2d(inputs, filter_size, num_filters, layer_name, stride=1, batch_norm
     input_shape = inputs.get_shape().as_list()
     with tf.variable_scope(layer_name):
         kernel_shape = [filter_size, filter_size, num_filters, input_shape[-1]]
-        if not len(out_shape.get_shape().as_list()):  # if out_shape is not provided
-            out_shape = [input_shape[0]] + list(map(lambda x: x * 2, input_shape[1:-1])) + [num_filters]
+        if not len(out_shape.get_shape().as_list()):    # if out_shape is not provided
+            out_shape = [input_shape[0]] + list(map(lambda x: x*2, input_shape[1:-1])) + [num_filters]
         weights = weight_variable(layer_name, shape=kernel_shape)
         # biases = bias_variable(layer_name, [num_filters])
         layer = tf.nn.conv2d_transpose(inputs,
@@ -91,7 +91,7 @@ def deconv_2d(inputs, filter_size, num_filters, layer_name, stride=1, batch_norm
                                        output_shape=out_shape,
                                        strides=[1, stride, stride, 1],
                                        padding="SAME")
-        print('{}: {}'.format(layer_name, layer.get_shape()))
+        #print('{}: {}'.format(layer_name, layer.get_shape()))
         if batch_norm:
             layer = batch_norm_wrapper(layer, is_train)
         else:
@@ -99,7 +99,7 @@ def deconv_2d(inputs, filter_size, num_filters, layer_name, stride=1, batch_norm
             layer += biases
         layer = activation(layer)
         if add_reg:
-            tf.add_to_collection('reg_weights', weights)
+            tf.add_to_collection('weights', weights)
     return layer
 
 
@@ -145,10 +145,10 @@ def max_pool(x, ksize, name):
     """
     with tf.variable_scope(name):
         maxpool = tf.nn.max_pool(x,
-                                 ksize=[1, ksize, ksize, 1],
-                                 strides=[1, 2, 2, 1],
-                                 padding="SAME",
-                                 name=name)
+                                   ksize=[1, ksize, ksize, 1],
+                                   strides=[1, 2, 2, 1],
+                                   padding="SAME",
+                                   name=name)
         print('{}: {}'.format(name, maxpool.get_shape()))
         return maxpool
 
@@ -179,6 +179,41 @@ def batch_norm_wrapper(inputs, is_training, decay=0.999, epsilon=1e-3):
     else:
         return tf.nn.batch_normalization(inputs, pop_mean, pop_var, beta, scale, epsilon)
 
+def avg_pool(x, ksize, stride, scope):
+    """Create an average pooling layer."""
+    return tf.nn.avg_pool(x,
+                            ksize=[1, ksize, ksize, 1],
+                            strides=[1, stride, stride, 1],
+                            padding="VALID",
+                            name=scope)
+
+def batch_norm(inputs, is_training, scope='BN', decay=0.999, epsilon=1e-3):
+    """
+    creates a batch normalization layer
+    :param inputs: input array
+    :param is_training: boolean for differentiating train and test
+    :param scope: scope name
+    :param decay:
+    :param epsilon:
+    :return: normalized input
+    """
+    with tf.variable_scope(scope):
+        scale = tf.Variable(tf.ones([inputs.get_shape()[-1]]))
+        beta = tf.Variable(tf.zeros([inputs.get_shape()[-1]]))
+        pop_mean = tf.Variable(tf.zeros([inputs.get_shape()[-1]]), trainable=False)
+        pop_var = tf.Variable(tf.ones([inputs.get_shape()[-1]]), trainable=False)
+
+        if is_training:
+            if len(inputs.get_shape().as_list()) == 4:  # For 32D convolutional layers
+                batch_mean, batch_var = tf.nn.moments(inputs, [0, 1, 2])
+            else:  # For fully-connected layers
+                batch_mean, batch_var = tf.nn.moments(inputs, [0])
+            train_mean = tf.assign(pop_mean, pop_mean * decay + batch_mean * (1 - decay))
+            train_var = tf.assign(pop_var, pop_var * decay + batch_var * (1 - decay))
+            with tf.control_dependencies([train_mean, train_var]):
+                return tf.nn.batch_normalization(inputs, batch_mean, batch_var, beta, scale, epsilon)
+        else:
+            return tf.nn.batch_normalization(inputs, pop_mean, pop_var, beta, scale, epsilon)
 
 def prelu(x, name=None):
     """
@@ -191,3 +226,13 @@ def prelu(x, name=None):
         alpha = tf.get_variable('alpha', shape=x.get_shape()[-1], dtype=x.dtype,
                                 initializer=tf.constant_initializer(0.1))
         return tf.maximum(0.0, x) + alpha * tf.minimum(0.0, x)
+
+def Relu(x):
+    return tf.nn.relu(x)
+
+def drop_out(x, keep_prob):
+    return tf.nn.dropout(x, keep_prob)
+
+
+def concatenation(layers):
+    return tf.concat(layers, axis=-1)

@@ -86,10 +86,9 @@ class BaseModel(object):
         else:
             print('----> Start Training')
         self.data_reader = DataLoader(self.conf)
-        self.numValid = self.data_reader.count_num_samples(mode='valid')
-        self.num_val_batch = int(self.numValid / self.conf.val_batch_size)
+        self.data_reader.get_data(mode='valid')
+        self.num_val_batch = int(self.data_reader.y_valid.shape[0] / self.conf.batch_size)
         for train_step in range(1, self.conf.max_step + 1):
-            # print('Step: {}'.format(train_step))
             self.is_training = True
             if train_step % self.conf.SUMMARY_FREQ == 0:
                 x_batch, y_batch = self.data_reader.next_batch(mode='train')
@@ -110,10 +109,11 @@ class BaseModel(object):
                 self.evaluate(train_step)
 
     def evaluate(self, train_step):
+        self.is_training = False
         self.sess.run(tf.local_variables_initializer())
         for step in range(self.num_val_batch):
-            start = step * self.conf.val_batch_size
-            end = (step + 1) * self.conf.val_batch_size
+            start = step * self.conf.batch_size
+            end = (step + 1) * self.conf.batch_size
             x_val, y_val = self.data_reader.next_batch(start, end, mode='valid')
             feed_dict = {self.x: x_val, self.y: y_val, self.keep_prob: 1}
             self.sess.run(self.mean_loss_op, feed_dict=feed_dict)
@@ -135,8 +135,8 @@ class BaseModel(object):
         self.sess.run(tf.local_variables_initializer())
         self.reload(step_num)
         self.data_reader = DataLoader(self.conf)
-        self.numTest = self.data_reader.count_num_samples(mode='test')
-        self.num_test_batch = int(self.numTest / self.conf.val_batch_size)
+        self.data_reader.get_data(mode='valid')
+        self.num_test_batch = int(self.data_reader.y_test.shape[0] / self.conf.batch_size)
         self.is_train = False
         self.sess.run(tf.local_variables_initializer())
         for step in range(self.num_test_batch):

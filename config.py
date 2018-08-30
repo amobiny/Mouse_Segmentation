@@ -2,7 +2,7 @@ import tensorflow as tf
 
 flags = tf.app.flags
 flags.DEFINE_string('mode', 'train', 'train or test')
-flags.DEFINE_string('model', 'FCN', 'FCN or Tiramisu or DenseNet')
+flags.DEFINE_string('model', 'FCN', 'FCN or Tiramisu or Densenet')
 flags.DEFINE_integer('reload_step', 0, 'Reload step to continue training')
 flags.DEFINE_integer('step_num', 20000, 'Reload step to test the model')
 
@@ -18,15 +18,14 @@ flags.DEFINE_string('loss_type', 'MSE', 'Mean-Squared Error')
 flags.DEFINE_boolean('add_l2_reg', False, 'Adds L2 regularizxation')
 flags.DEFINE_float('lmbda', 1e-3, 'L2 regularization coefficient')
 flags.DEFINE_integer('batch_size', 8, 'training batch size')
-flags.DEFINE_integer('val_batch_size', 1, 'training batch size')
 
 # data
-flags.DEFINE_integer('num_tr', 1280, 'Total number of training images')
+flags.DEFINE_integer('num_tr', 1, 'Total number of training images')
 flags.DEFINE_string('data_dir', './data/', 'Data directory')
 flags.DEFINE_boolean('normalize', True, 'Whether to load normalized data or not')
 flags.DEFINE_boolean('data_augment', True, 'Adds augmentation to data')
 flags.DEFINE_integer('max_angle', 40, 'Maximum rotation angle along each axis; when applying augmentation')
-flags.DEFINE_integer('train_img_size', 512, 'Size of the large original image')
+flags.DEFINE_integer('img_size', 512, 'Size of the large original image')
 flags.DEFINE_integer('height', 32, 'Network input height size')
 flags.DEFINE_integer('width', 32, 'Network input width size')
 flags.DEFINE_integer('in_channel', 60, 'Number of input channels')

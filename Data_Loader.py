@@ -7,49 +7,47 @@ import scipy.ndimage
 class DataLoader(object):
 
     def __init__(self, cfg):
-        self.augment = cfg.data_augment
-        self.max_angle = cfg.max_angle
+        self.cfg = cfg
         self.data_dir = cfg.data_dir
-        self.batch_size = cfg.batch_size
         if cfg.normalize:
             self.file_name = 'data_norm.h5'
         else:
             self.file_name = 'data.h5'
-        self.num_tr = cfg.num_tr
         self.height, self.width = cfg.height, cfg.width
-        self.max_bottom_left_front_corner = (cfg.train_img_size - cfg.height - 1, cfg.train_img_size - cfg.width - 1)
+        self.max_bottom_left_front_corner = (cfg.img_size - cfg.height - 1, cfg.img_size - cfg.width - 1)
         # maximum value that the bottom left front corner of a cropped patch can take
 
     def next_batch(self, start=None, end=None, mode='train'):
+        h5f = h5py.File(self.data_dir + self.file_name, 'r')
         if mode == 'train':
-            img_idx = np.sort(np.random.choice(self.num_tr, replace=False, size=self.batch_size))
-            bottom = np.random.randint(self.max_bottom_left_front_corner[1])
-            left = np.random.randint(self.max_bottom_left_front_corner[0])
-            h5f = h5py.File(self.data_dir + self.file_name, 'r')
-            x = h5f['x_train'][img_idx, bottom:bottom + self.height, left:left + self.width, :]
-            y = h5f['y_train'][img_idx, bottom:bottom + self.height, left:left + self.width]
-            if self.augment:
-                x, y = random_rotation_2d(x, y, max_angle=self.max_angle)
+            img_idxs = np.random.choice(self.cfg.num_tr, replace=True, size=self.cfg.batch_size)
+            bottom_coords = np.random.randint(self.max_bottom_left_front_corner[1], size=self.cfg.batch_size)
+            left_coords = np.random.randint(self.max_bottom_left_front_corner[0], size=self.cfg.batch_size)
+            x = [h5f['x_train'][img_idx, bottom:bottom + self.height, left:left + self.width, :]
+                 for img_idx, bottom, left in zip(img_idxs, bottom_coords, left_coords)]
+            y = [h5f['y_train'][img_idx, bottom:bottom + self.height, left:left + self.width, :]
+                 for img_idx, bottom, left in zip(img_idxs, bottom_coords, left_coords)]
+            if self.cfg.data_augment:
+                x, y = random_rotation_2d(x, y, max_angle=self.cfg.max_angle)
+            return x, y
         elif mode == 'valid':
-            h5f = h5py.File(self.data_dir + self.file_name, 'r')
-            x = h5f['x_valid'][start:end]
-            y = h5f['y_valid'][start:end]
+            return self.x_valid[start:end], self.y_valid[start:end]
         elif mode == 'test':
-            h5f = h5py.File(self.data_dir + self.file_name, 'r')
-            x = h5f['x_test'][start:end]
-            y = h5f['y_test'][start:end]
-        h5f.close()
-        return x, y
+            return self.x_test[start:end], self.y_test[start:end]
 
-    def count_num_samples(self, mode='valid'):
+    def get_data(self, mode='valid'):
         if mode == 'valid':
             h5f = h5py.File(self.data_dir + self.file_name, 'r')
-            num_ = h5f['y_valid'][:].shape[0]
-        elif mode == 'test':
+            x_valid = h5f['x_valid'][:]
+            y_valid = h5f['y_valid'][:]
+            self.x_valid = np.reshape(x_valid, (-1, self.height, self.width, self.cfg.in_channel))
+            self.y_valid = np.reshape(y_valid, (-1, self.height, self.width, self.cfg.out_channel))
+        if mode == 'test':
             h5f = h5py.File(self.data_dir + self.file_name, 'r')
-            num_ = h5f['y_test'][:].shape[0]
-        h5f.close()
-        return num_
+            x_test = h5f['x_test'][:]
+            y_test = h5f['y_test'][:]
+            self.x_test = np.reshape(x_test, (-1, self.height, self.width, self.cfg.in_channel))
+            self.y_test = np.reshape(y_test, (-1, self.height, self.width, self.cfg.out_channel))
 
 
 def random_rotation_2d(img_batch, mask_batch, max_angle):

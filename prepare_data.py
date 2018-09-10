@@ -30,18 +30,21 @@ def preprocess(normalize=True, raw_data_dir='./raw_data', out_data_dir='./data')
     if not os.path.exists(out_data_dir):
         os.makedirs(out_data_dir)
 
-    x_train, y_train = load_data(raw_data_dir, '/he_sec_a.h5')
-    x_valid, y_valid = load_data(raw_data_dir, '/he_sec_b.h5')
+    x_train_1, y_train_1 = load_data(raw_data_dir, '/he_sec_a.h5')
+    x_train_2, y_train_2 = load_data(raw_data_dir, '/he_sec_b.h5')
     x_test, y_test = load_data(raw_data_dir, '/he_sec_c.h5')
+    x_train = np.concatenate((x_train_1[np.newaxis], x_train_2[np.newaxis]), axis=0)
+    y_train = np.concatenate((y_train_1[np.newaxis], y_train_2[np.newaxis]), axis=0)
 
     if normalize:
         x_train, y_train = norm(x_train, y_train, mode='standard')
-        x_valid, y_valid = norm(x_valid, y_valid, mode='standard')
+        x_valid, y_valid = norm(x_test, y_test, mode='standard')
         x_test, y_test = norm(x_test, y_test, mode='standard')
         out_name = out_data_dir+'/data_norm.h5'
     else:
+        x_valid = x_test
         y_train = y_train/255.
-        y_valid = y_valid/255.
+        y_valid = y_test/255.
         y_test = y_test/255.
         out_name = out_data_dir+'/data.h5'
 

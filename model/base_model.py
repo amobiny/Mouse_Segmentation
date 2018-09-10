@@ -2,6 +2,9 @@ import tensorflow as tf
 from Data_Loader import DataLoader
 import os
 import numpy as np
+from scipy import misc
+import matplotlib.pyplot as plt
+
 
 # add a line for pull test
 class BaseModel(object):
@@ -24,7 +27,7 @@ class BaseModel(object):
         with tf.name_scope('Loss'):
             if self.conf.loss_type == 'MSE':
                 with tf.name_scope('MSE'):
-                    self.loss = tf.norm(self.y - self.logits)
+                    self.loss = tf.norm(self.y - self.y_pred)
             if self.conf.use_reg:
                 with tf.name_scope('L2_loss'):
                     l2_loss = tf.reduce_sum(
@@ -104,15 +107,20 @@ class BaseModel(object):
     def evaluate(self, train_step):
         self.is_training = False
         self.sess.run(tf.local_variables_initializer())
+        pred_mask = np.zeros_like(self.data_reader.y_valid)
         for step in range(self.num_val_batch):
             start = step * self.conf.batch_size
             end = (step + 1) * self.conf.batch_size
             x_val, y_val = self.data_reader.next_batch(start, end, mode='valid')
             feed_dict = {self.x: x_val, self.y: y_val, self.keep_prob: 1}
-            self.sess.run(self.mean_loss_op, feed_dict=feed_dict)
+            pred_mask[start:end], _ = self.sess.run([self.y_pred, self.mean_loss_op], feed_dict=feed_dict)
         summary_valid = self.sess.run(self.merged_summary, feed_dict=feed_dict)
         valid_loss = self.sess.run(self.mean_loss)
         self.save_summary(summary_valid, train_step + self.conf.reload_step)
+        self.save_fig(train_step,
+                      pred_mask.reshape(-1, self.conf.img_size, self.conf.img_size, self.conf.out_channel),
+                      self.data_reader.y_valid.reshape(-1, self.conf.img_size, self.conf.img_size, self.conf.out_channel),
+                      valid_loss, mode='valid')
         if valid_loss < self.best_validation_loss:
             self.best_validation_loss = valid_loss
             improved_str = '(improved)'
@@ -120,7 +128,7 @@ class BaseModel(object):
         else:
             improved_str = ''
         print('-' * 25 + 'Validation' + '-' * 25)
-        print('After {0} training step: val_loss= {1:.4f}'
+        print('After {0} training step: val_loss= {1:.4f} {2}'
               .format(train_step, valid_loss, improved_str))
         print('-' * 60)
 
@@ -128,32 +136,60 @@ class BaseModel(object):
         self.sess.run(tf.local_variables_initializer())
         self.reload(step_num)
         self.data_reader = DataLoader(self.conf)
-        self.data_reader.get_data(mode='valid')
+        self.data_reader.get_data(mode='test')
         self.num_test_batch = int(self.data_reader.y_test.shape[0] / self.conf.batch_size)
+        pred_mask = np.zeros_like(self.data_reader.y_test)
         self.is_train = False
         self.sess.run(tf.local_variables_initializer())
         for step in range(self.num_test_batch):
-            start = step * self.conf.val_batch_size
-            end = (step + 1) * self.conf.val_batch_size
+            start = step * self.conf.batch_size
+            end = (step + 1) * self.conf.batch_size
             x_test, y_test = self.data_reader.next_batch(start, end, mode='test')
             feed_dict = {self.x: x_test, self.y: y_test, self.keep_prob: 1}
-            self.sess.run(self.mean_loss_op, feed_dict=feed_dict)
+            pred_mask[step], _ = self.sess.run([self.y_pred, self.mean_loss_op], feed_dict=feed_dict)
         test_loss = self.sess.run(self.mean_loss)
+        self.save_fig(step_num, pred_mask, self.data_reader.y_test, test_loss)
         print('-' * 18 + 'Test Completed' + '-' * 18)
         print('test_loss= {0:.4f}'.format(test_loss))
         print('-' * 50)
 
     def save(self, step):
         print('----> Saving the model at step #{0}'.format(step))
-        checkpoint_path = os.path.join(self.conf.modeldir + self.conf.run_name)
+        checkpoint_path = os.path.join(self.conf.modeldir+self.conf.run_name, self.conf.model_name)
         self.saver.save(self.sess, checkpoint_path, global_step=step)
 
     def reload(self, step):
-        checkpoint_path = os.path.join(self.conf.modeldir + self.conf.run_name)
+        checkpoint_path = os.path.join(self.conf.modeldir+self.conf.run_name, self.conf.model_name)
         model_path = checkpoint_path + '-' + str(step)
         if not os.path.exists(model_path + '.meta'):
             print('----> No such checkpoint found', model_path)
             return
-        print('----> Restoring the model...')
+        print('----> Restoring the model at step# {}'.format(step))
         self.saver.restore(self.sess, model_path)
         print('----> Model successfully restored')
+
+    def save_fig(self, step, pred, y, loss, mode='test'):
+        num_images = pred.shape[0]
+        fig, axs = plt.subplots(nrows=num_images, ncols=3)
+        axs = axs.reshape(-1, 3)
+        for ii in range(num_images):
+            pred_mask = pred[ii]
+            true_mask = y[ii]
+            ax = axs[ii, 0]
+            ax.imshow(true_mask)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_title('Groung Truth')
+            ax = axs[ii, 1]
+            ax.imshow(pred_mask)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_title('Prediction')
+            ax = axs[ii, 2]
+            ax.imshow(np.abs(true_mask-pred_mask))
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_title('Difference)')
+            ax.set_xlabel('loss='+str(loss))
+            fig.set_size_inches(6, 2*num_images)
+            fig.savefig(self.conf.modeldir+self.conf.run_name+'/'+mode+'_step_{0}_image{1}.png'.format(step, ii))

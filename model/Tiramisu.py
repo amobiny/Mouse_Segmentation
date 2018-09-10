@@ -6,8 +6,8 @@ from utils import get_num_channels
 # add a line
 class Tiramisu(BaseModel):
     def __init__(self, sess, conf,
-                 num_levels=5,
-                 num_convs=(4, 5, 7, 10, 12),
+                 num_levels=4,
+                 num_convs=(5, 7, 10, 12),
                  bottom_convs=15):
 
         super(Tiramisu, self).__init__(sess, conf)

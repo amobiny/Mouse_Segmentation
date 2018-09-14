@@ -1,15 +1,15 @@
 import tensorflow as tf
 
 flags = tf.app.flags
-flags.DEFINE_string('mode', 'test', 'train or test')
-flags.DEFINE_string('model', 'Densenet', 'FCN or Tiramisu or Densenet')
+flags.DEFINE_string('mode', 'train', 'train or test')
+flags.DEFINE_string('model', 'Tiramisu', 'FCN or Tiramisu or Densenet or CNN')
 flags.DEFINE_integer('reload_step', 0, 'Reload step to continue training')
-flags.DEFINE_integer('step_num', 400, 'Reload step to test the model')
+flags.DEFINE_integer('step_num', 3000, 'Reload step to test the model')
 
 # Training logs
 flags.DEFINE_integer('max_step', 100000, '# of step for training')
 flags.DEFINE_integer('SUMMARY_FREQ', 100, 'Number of step to save summary')
-flags.DEFINE_integer('VAL_FREQ', 1000, 'Number of step to evaluate the network on Validation data')
+flags.DEFINE_integer('VAL_FREQ', 2, 'Number of step to evaluate the network on Validation data') #default = 1000
 flags.DEFINE_float('init_lr', 1e-3, 'Initial learning rate')
 flags.DEFINE_float('lr_min', 1e-5, 'Minimum learning rate')
 
@@ -20,19 +20,19 @@ flags.DEFINE_float('lmbda', 1e-3, 'L2 regularization coefficient')
 flags.DEFINE_integer('batch_size', 4, 'training batch size')
 
 # data
-flags.DEFINE_integer('num_tr', 1, 'Total number of training images')
+flags.DEFINE_integer('num_tr', 2, 'Total number of training images')
 flags.DEFINE_string('data_dir', './data/', 'Data directory')
 flags.DEFINE_boolean('normalize', True, 'Whether to load the normalized data or not')
-flags.DEFINE_boolean('data_augment', True, 'Adds augmentation to data')
+flags.DEFINE_boolean('data_augment', False, 'Adds augmentation to data')
 flags.DEFINE_integer('max_angle', 180, 'Maximum rotation angle along each axis; when applying augmentation')
 flags.DEFINE_integer('img_size', 512, 'Size of the large original image')
-flags.DEFINE_integer('height', 512, 'Network input height size')
-flags.DEFINE_integer('width', 512, 'Network input width size')
+flags.DEFINE_integer('height', 32, 'Network input height size')
+flags.DEFINE_integer('width', 32, 'Network input width size')
 flags.DEFINE_integer('in_channel', 60, 'Number of input channels')
 flags.DEFINE_integer('out_channel', 3, 'Number of output channels')
 
 # Directories
-flags.DEFINE_string('run_name', 'run03', 'Run name')
+flags.DEFINE_string('run_name', 'run0_tramisu', 'Run name')
 flags.DEFINE_string('logdir', './Results/log_dir/', 'Logs directory')
 flags.DEFINE_string('modeldir', './Results/model_dir/', 'Model directory')
 flags.DEFINE_string('model_name', 'model', 'Nothing but a name :)')

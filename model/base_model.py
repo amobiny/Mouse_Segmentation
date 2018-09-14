@@ -116,7 +116,6 @@ class BaseModel(object):
         #     x_val, y_val = self.data_reader.next_batch(start, end, mode='valid')
         feed_dict = {self.x: self.data_reader.x_valid, self.y: self.data_reader.y_valid, self.keep_prob: 1}
         pred_mask,  _ = self.sess.run([self.y_pred, self.mean_loss_op], feed_dict=feed_dict)
-        # self.concat_crops(pred_mask, train_step)
         summary_valid = self.sess.run(self.merged_summary, feed_dict=feed_dict)
         valid_loss = self.sess.run(self.mean_loss)
         self.save_summary(summary_valid, train_step + self.conf.reload_step)
@@ -196,15 +195,3 @@ class BaseModel(object):
             ax.set_xlabel('loss='+str(loss))
             fig.set_size_inches(6, 2*num_images)
             fig.savefig(self.conf.modeldir+self.conf.run_name+'/'+mode+'_step_{0}_image{1}.png'.format(step, ii))
-
-    def concat_crops(self, pred , step):
-        w = 512
-        h = 512
-        concat_img = Image.new('RGB' , (w,h))
-        for i in range(self.data_reader.idx.shape[0]):
-            position = (self.data_reader.idx[i , 0], self.data_reader.idx[i,1])
-            pred_ = img_as_ubyte(pred[i])       # it will make the numpy array ranges from 0->255
-            img = Image.fromarray(pred_)
-            concat_img.paste(img, position)
-        concat_img.show()
-        concat_img.save(self.conf.modeldir+self.conf.run_name+'/'+step)

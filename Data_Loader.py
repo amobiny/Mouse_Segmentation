@@ -50,49 +50,6 @@ class DataLoader(object):
             self.x_test = np.expand_dims(x_test, 0)
             self.y_test = np.expand_dims(y_test, 0)
 
-    def load_crop_data(self, mode):
-        # load validation and test data and crop the m to the size of network input
-        h5f = h5py.File(self.data_dir + self.file_name, 'r')
-        if mode == 'valid':
-            x = h5f['x_valid'][:]
-            y = h5f['y_valid'][:]
-            plt.imshow(y)
-            self.x_valid = np.asarray(DataLoader.crop_image(self, x))
-            self.y_valid = np.asarray(DataLoader.crop_image(self, y))
-
-        elif mode == 'test':
-            x = h5f['x_test'][:]
-            y = h5f['y_test'][:]
-            self.x_test = np.asarray(DataLoader.crop_image(self, x))
-            self.y_test = np.asarray(DataLoader.crop_image(self, y))
-
-    def crop_image (self, x):
-        crop_x = []
-        idx = [] # indices of center of each crop
-        # for r in range(floor(self.height/2)-1,(x.shape[0]-floor(self.height/2)+1), self.height):
-        #     for c in range(floor(self.width/2)-1,(x.shape[1]- floor(self.width/2)+1),self.width):
-        #         r_begin = r - floor(self.height/2)
-        #         r_end = r_begin + self.height
-        #         c_begin = c - floor (self.width/2)
-        #         c_end = c_begin + self.width
-        #         if r_begin>=0 and c_begin>=0:
-        #             if r_end<=x.shape[0] and c_end<=x.shape[1]:
-        #                 idx.append([r_begin,c_begin])
-        #                 crop_x.append(x[r_begin:r_end , c_begin:c_end, :])
-        for r in range(0,x.shape[0] - self.height+1,self.height):
-            for c in range(0,x.shape[1] - self.width+1,self.width): # (r ,c) position in top left corner
-                r_end = r + self.height
-                c_end = c + self.width
-                if c>=0 and r>=0:
-                    if c_end<=x.shape[0] and r_end<=x.shape[1]:
-                        idx.append([r, c])
-                        crop_x.append(x[r:r_end, c:c_end, :])
-                else:
-                    print("out of bound")
-        self.idx = np.asarray(idx)
-        return crop_x
-
-
 def random_rotation_2d(img_batch, mask_batch, max_angle):
     """
     Randomly rotate an image by a random angle (-max_angle, max_angle)

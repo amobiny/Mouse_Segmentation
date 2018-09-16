@@ -26,6 +26,38 @@ def bias_variable(name, shape):
     return tf.get_variable('b_' + name, dtype=tf.float32,
                            initializer=initial)
 
+def fc_layer(x, num_units, name, activation=tf.identity):
+    """
+    Create a fully-connected layer
+    :param x: input from previous layer
+    :param num_units: number of hidden units in the fully-connected layer
+    :param name: layer name
+    :param use_relu: boolean to add ReLU non-linearity (or not)
+    :return: The output array
+    """
+    with tf.variable_scope(name):
+        in_dim = x.get_shape()[1]
+        W = weight_variable(name , shape=[in_dim, num_units])
+        tf.summary.histogram('weight', W)
+        b = bias_variable(name, [num_units])
+        tf.summary.histogram('bias', b)
+        layer = tf.matmul(x, W)
+        layer += b
+        layer = activation(layer)
+        return layer
+
+def flatten_layer(layer):
+    """
+    Flattens the output of the convolutional layer to be fed into fully-connected layer
+    :param layer: input array
+    :return: flattened array
+    """
+    with tf.variable_scope('Flatten_layer'):
+        layer_shape = layer.get_shape()
+        num_features = layer_shape[1:4].num_elements()
+        layer_flat = tf.reshape(layer, [-1, num_features])
+    return layer_flat
+
 
 def conv_2d(inputs, filter_size, num_filters, layer_name, stride=1, is_train=True,
             batch_norm=False, add_reg=False, activation=tf.identity):
@@ -64,7 +96,7 @@ def conv_2d(inputs, filter_size, num_filters, layer_name, stride=1, is_train=Tru
 
 
 def deconv_2d(inputs, filter_size, num_filters, layer_name, stride=1, batch_norm=False,
-              is_train=True, add_reg=False, activation=tf.identity, out_shape=None):
+              is_train=True, add_reg=False, activation=tf.identity):
     """
     Create a 2D transposed-convolution layer
     :param inputs: input array
@@ -81,16 +113,23 @@ def deconv_2d(inputs, filter_size, num_filters, layer_name, stride=1, batch_norm
     """
     input_shape = inputs.get_shape().as_list()
     with tf.variable_scope(layer_name):
-        kernel_shape = [filter_size, filter_size, num_filters, input_shape[-1]]
-        if not len(out_shape.get_shape().as_list()):    # if out_shape is not provided
-            out_shape = [input_shape[0]] + list(map(lambda x: x*2, input_shape[1:-1])) + [num_filters]
-        weights = weight_variable(layer_name, shape=kernel_shape)
+        #kernel_shape = [filter_size, filter_size, num_filters, input_shape[-1]]
+        #if not len(out_shape.get_shape().as_list()):    # if out_shape is not provided
+         #   out_shape = [input_shape[0]] + list(map(lambda x: x*2, input_shape[1:-1])) + [num_filters]
+        #weights = weight_variable(layer_name, shape=kernel_shape)
         # biases = bias_variable(layer_name, [num_filters])
-        layer = tf.nn.conv2d_transpose(inputs,
-                                       filter=weights,
-                                       output_shape=out_shape,
-                                       strides=[1, stride, stride, 1],
+        # layer = tf.nn.conv2d_transpose(inputs,
+        #                                filter=weights,
+        #                                output_shape=out_shape,
+        #                                strides=[1, stride, stride, 1],
+        #                                padding="SAME")
+
+        layer = tf.layers.conv2d_transpose(inputs,
+                                       filters=num_filters,
+                                       kernel_size=[filter_size, filter_size],
+                                       strides=[stride, stride],
                                        padding="SAME")
+
         #print('{}: {}'.format(layer_name, layer.get_shape()))
         if batch_norm:
             layer = batch_norm_wrapper(layer, is_train)
@@ -98,8 +137,8 @@ def deconv_2d(inputs, filter_size, num_filters, layer_name, stride=1, batch_norm
             biases = bias_variable(layer_name, [num_filters])
             layer += biases
         layer = activation(layer)
-        if add_reg:
-            tf.add_to_collection('weights', weights)
+        #if add_reg:
+         #   tf.add_to_collection('weights', weights)
     return layer
 
 
@@ -236,3 +275,4 @@ def drop_out(x, keep_prob):
 
 def concatenation(layers):
     return tf.concat(layers, axis=-1)
+

@@ -4,16 +4,19 @@ import os
 import numpy as np
 from scipy import misc
 import matplotlib.pyplot as plt
+from PIL import Image
+from skimage import img_as_ubyte
 
-
+# add a line for pull test
 class BaseModel(object):
 
     def __init__(self, sess, conf):
         self.sess = sess
         self.conf = conf
         self.is_training = True
-        self.input_shape = [None, self.conf.height, self.conf.width, self.conf.in_channel]
-        self.output_shape = [None, self.conf.height, self.conf.width, self.conf.out_channel]
+        self.input_shape = [None, None, None, self.conf.in_channel]
+        self.output_shape = [None, None, None, self.conf.width, self.conf.out_channel]
+        self.output_shape = [None, None, None, self.conf.width, self.conf.out_channel]
         self.create_placeholders()
 
     def create_placeholders(self):
@@ -26,7 +29,7 @@ class BaseModel(object):
         with tf.name_scope('Loss'):
             if self.conf.loss_type == 'MSE':
                 with tf.name_scope('MSE'):
-                    self.loss = tf.norm(self.y - self.y_pred)
+                    self.loss = tf.norm(self.y - self.y_pred) #  tf.metrics.mean_squared_error()
             if self.conf.use_reg:
                 with tf.name_scope('L2_loss'):
                     l2_loss = tf.reduce_sum(
@@ -81,6 +84,7 @@ class BaseModel(object):
             print('----> Start Training')
         self.best_validation_loss = 10000
         self.data_reader = DataLoader(self.conf)
+        # self.data_reader.load_crop_data(mode='valid')
         self.data_reader.get_data(mode='valid')
         self.num_val_batch = int(self.data_reader.y_valid.shape[0] / self.conf.batch_size)
         for train_step in range(1, self.conf.max_step + 1):
@@ -100,19 +104,18 @@ class BaseModel(object):
                 feed_dict = {self.x: x_batch, self.y: y_batch, self.keep_prob: self.conf.drop_out_rate}
                 self.sess.run([self.train_op, self.mean_loss_op], feed_dict=feed_dict)
             if train_step % self.conf.VAL_FREQ == 0:
-                self.is_training = False
                 self.evaluate(train_step)
 
     def evaluate(self, train_step):
         self.is_training = False
         self.sess.run(tf.local_variables_initializer())
-        pred_mask = np.zeros_like(self.data_reader.y_valid)
-        for step in range(self.num_val_batch):
-            start = step * self.conf.batch_size
-            end = (step + 1) * self.conf.batch_size
-            x_val, y_val = self.data_reader.next_batch(start, end, mode='valid')
-            feed_dict = {self.x: x_val, self.y: y_val, self.keep_prob: 1}
-            pred_mask[start:end], _ = self.sess.run([self.y_pred, self.mean_loss_op], feed_dict=feed_dict)
+        # pred_mask = np.zeros_like(self.data_reader.y_valid)
+        # for step in range(self.num_val_batch):
+        #     start = step * self.conf.batch_size
+        #     end = (step + 1) * self.conf.batch_size
+        #     x_val, y_val = self.data_reader.next_batch(start, end, mode='valid')
+        feed_dict = {self.x: self.data_reader.x_valid, self.y: self.data_reader.y_valid, self.keep_prob: 1}
+        pred_mask,  _ = self.sess.run([self.y_pred, self.mean_loss_op], feed_dict=feed_dict)
         summary_valid = self.sess.run(self.merged_summary, feed_dict=feed_dict)
         valid_loss = self.sess.run(self.mean_loss)
         self.save_summary(summary_valid, train_step + self.conf.reload_step)
@@ -145,7 +148,7 @@ class BaseModel(object):
             end = (step + 1) * self.conf.batch_size
             x_test, y_test = self.data_reader.next_batch(start, end, mode='test')
             feed_dict = {self.x: x_test, self.y: y_test, self.keep_prob: 1}
-            pred_mask[step], _ = self.sess.run([self.y_pred, self.mean_loss_op], feed_dict=feed_dict)
+            pred_mask[start:end], _ = self.sess.run([self.y_pred, self.mean_loss_op], feed_dict=feed_dict)
         test_loss = self.sess.run(self.mean_loss)
         self.save_fig(step_num, pred_mask, self.data_reader.y_test, test_loss)
         print('-' * 18 + 'Test Completed' + '-' * 18)

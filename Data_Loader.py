@@ -2,7 +2,8 @@ import random
 import numpy as np
 import h5py
 import scipy.ndimage
-
+from math import floor
+import matplotlib.pyplot as plt
 
 class DataLoader(object):
 
@@ -21,7 +22,7 @@ class DataLoader(object):
         h5f = h5py.File(self.data_dir + self.file_name, 'r')
         if mode == 'train':
             img_idxs = np.random.choice(self.cfg.num_tr, replace=True, size=self.cfg.batch_size)
-            bottom_coords = np.random.randint(self.max_bottom_left_front_corner[1], size=self.cfg.batch_size)
+            bottom_coords = np.random.randint(self.max_bottom_left_front_corner[1], size=self.cfg.batch_size) #
             left_coords = np.random.randint(self.max_bottom_left_front_corner[0], size=self.cfg.batch_size)
             x = np.array([h5f['x_train'][img_idx, bottom:bottom + self.height, left:left + self.width, :]
                           for img_idx, bottom, left in zip(img_idxs, bottom_coords, left_coords)])
@@ -40,15 +41,14 @@ class DataLoader(object):
             h5f = h5py.File(self.data_dir + self.file_name, 'r')
             x_valid = h5f['x_valid'][:]
             y_valid = h5f['y_valid'][:]
-            self.x_valid = np.reshape(x_valid, (-1, self.height, self.width, self.cfg.in_channel))
-            self.y_valid = np.reshape(y_valid, (-1, self.height, self.width, self.cfg.out_channel))
+            self.x_valid = np.expand_dims(x_valid, 0)
+            self.y_valid = np.expand_dims(y_valid, 0)
         if mode == 'test':
             h5f = h5py.File(self.data_dir + self.file_name, 'r')
             x_test = h5f['x_test'][:]
             y_test = h5f['y_test'][:]
-            self.x_test = np.reshape(x_test, (-1, self.height, self.width, self.cfg.in_channel))
-            self.y_test = np.reshape(y_test, (-1, self.height, self.width, self.cfg.out_channel))
-
+            self.x_test = np.expand_dims(x_test, 0)
+            self.y_test = np.expand_dims(y_test, 0)
 
 def random_rotation_2d(img_batch, mask_batch, max_angle):
     """
@@ -69,3 +69,6 @@ def random_rotation_2d(img_batch, mask_batch, max_angle):
 
 def rotate(x, angle):
     return scipy.ndimage.interpolation.rotate(x, angle, mode='nearest', axes=(0, 1), reshape=False)
+
+
+

@@ -10,6 +10,9 @@ elif args.model == 'Tiramisu':
     from model.Tiramisu import Tiramisu as Model
 elif args.model == 'Densenet':
     from model.DenseNet import DenseNet as Model
+elif args.model == 'CNN':
+    from model.My_CNN import CNN as Model
+
 
 
 def main(_):

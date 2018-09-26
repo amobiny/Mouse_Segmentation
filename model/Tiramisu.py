@@ -6,9 +6,9 @@ from utils import get_num_channels
 # add a line
 class Tiramisu(BaseModel):
     def __init__(self, sess, conf,
-                 num_levels=5,
-                 num_convs=(4, 5, 7, 10, 12),
-                 bottom_convs=15):
+                 num_levels=2, #5,
+                 num_convs= (5, 7), #(4, 5, 7, 10, 12),
+                 bottom_convs= 5): #15
 
         super(Tiramisu, self).__init__(sess, conf)
         self.num_levels = num_levels
@@ -29,7 +29,8 @@ class Tiramisu(BaseModel):
             shape_list = list()
 
             with tf.variable_scope('input'):
-                x = conv_2d(x, self.k_size, 48, 'input_layer', batch_norm=False, is_train=self.is_training)
+                x = conv_2d(x, self.k_size, 48, 'input_layer', add_reg=self.conf.use_reg,
+                            batch_norm=False, is_train=self.is_training)
                 # x = tf.nn.dropout(x, self.keep_prob)
                 print('{}: {}'.format('input_layer', x.get_shape()))
 
@@ -83,6 +84,7 @@ class Tiramisu(BaseModel):
                                     num_filters=self.conf.start_channel_num,
                                     layer_name='conv_' + str(i + 1),
                                     batch_norm=self.conf.use_BN,
+                                    add_reg=self.conf.use_reg,
                                     use_relu=True,
                                     is_train=self.is_training)
             layer = tf.nn.dropout(layer, self.keep_prob)
@@ -98,6 +100,7 @@ class Tiramisu(BaseModel):
                             layer_name='conv_down',
                             stride=1,
                             batch_norm=self.conf.use_BN,
+                            add_reg=self.conf.use_reg,
                             is_train=self.is_training,
                             use_relu=True)
         x = tf.nn.dropout(x, self.keep_prob)

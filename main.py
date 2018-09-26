@@ -4,6 +4,7 @@ import os
 from utils import write_spec
 
 
+
 if args.model == 'FCN':
     from model.FullyConvNet import FCN as Model
 elif args.model == 'Tiramisu':
@@ -27,6 +28,8 @@ def main(_):
             os.makedirs(args.logdir+args.run_name)
         if args.mode == 'train':
             write_spec(args)
+            if args.mask:
+                model.load_mask()
             model.train()
         elif args.mode == 'test':
             model.test(step_num=args.step_num)

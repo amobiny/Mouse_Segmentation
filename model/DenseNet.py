@@ -51,9 +51,9 @@ class DenseNet(BaseModel):
                 for l in reversed(range(self.num_levels)):
                     with tf.variable_scope('level_' + str(l + 1)):
                         shape = x.get_shape().as_list()
-                        out_shape = [self.conf.batch_size] + list(map(lambda x: x*2, shape[1:-1])) + [int(shape[-1]*self.theta_up)]
-                        out_shape = tf.shape(tf.zeros((out_shape)))
-                        x = self.transition_up(x, out_shape=out_shape, scope='TU_' + str(l + 1), num_filters= int(shape[-1]*self.theta_up))
+                        #out_shape = [self.conf.batch_size] + list(map(lambda x: x*2, shape[1:-1])) + [int(shape[-1]*self.theta_up)]
+                        #out_shape = tf.shape(tf.zeros((out_shape)))
+                        x = self.transition_up(x, scope='TU_' + str(l + 1), num_filters= int(shape[-1]*self.theta_up))
                         print('TU_{} shape: {}'.format(str(l + 1), x.get_shape()))
                         stack = tf.concat((x, feature_list[l]), axis=-1)
                         print('After concat shape: {}'.format(stack.get_shape()))
@@ -103,7 +103,7 @@ class DenseNet(BaseModel):
             x = avg_pool(x, ksize=2, stride=2, scope='avg_pool')
             return x
 
-    def transition_up(self, x, out_shape, scope, num_filters=None):
+    def transition_up(self, x, scope, num_filters=None):
         with tf.variable_scope(scope):
             x = batch_norm(x, is_training=self.is_training, scope='BN')
             x = Relu(x)
@@ -118,9 +118,7 @@ class DenseNet(BaseModel):
                           num_filters=num_filters,
                           layer_name='deconv',
                           stride=2,
-                          add_reg=self.conf.use_reg,
                           batch_norm=False,
-                          is_train=self.is_training,
-                          out_shape=out_shape)
+                          is_train=self.is_training)
             x = drop_out(x, keep_prob=self.keep_prob)
         return x
